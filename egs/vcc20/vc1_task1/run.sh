@@ -6,13 +6,16 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 
+dataset=/output
+out_dir=/output
+
 # general configuration
 backend=pytorch
 stage=-1
 stop_stage=100
 ngpu=1       # number of gpus ("0" uses cpu, otherwise use gpu)
 nj=10        # numebr of parallel jobs
-dumpdir=dump # directory to dump full features
+dumpdir=$out_dir/dump # directory to dump full features
 verbose=0    # verbose option (if set > 0, get more log)
 N=0          # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
 seed=1       # random seed number
@@ -42,21 +45,21 @@ decode_config=conf/decode.yaml
 # decoding related
 model=model.loss.best
 voc=PWG                         # GL or PWG
-voc_expdir=downloads/pwg_task1  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
+voc_expdir=$dataset/downloads/pwg_task1  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
                                 # If use manually trained models, set to `../voc1/exp/<expdir>`
 voc_checkpoint=                 # If not specified, automatically set to the latest checkpoint 
 griffin_lim_iters=64            # the number of iterations of Griffin-Lim
 
 # pretrained model related
-pretrained_model_dir=downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
+pretrained_model_dir=$dataset/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
                                 # If use manually trained models, set to `../libritts`
-pretrained_model_name=          # If use provided pretrained models, only set to `tts1`
+pretrained_model_name=tts1          # If use provided pretrained models, only set to `tts1`
                                 # If use manually trained models, only set to `tts1`, too
 finetuned_model_name=           # Only set to `tts1_[trgspk]`
 
 # dataset configuration
-db_root=downloads/official_v1.0_training
-eval_db_root=downloads/official_v1.0_training    # Same as `db_root` in training
+db_root=$dataset/downloads/official_v1.0_training
+eval_db_root=$dataset/downloads/official_v1.0_training    # Same as `db_root` in training
 list_dir=local/lists
 spk=TEF1 
 
@@ -66,7 +69,7 @@ trgspk=                                         # Ex. TEF1
 asr_model="librispeech.transformer.ngpu4"
 test_list_file=local/lists/E_train_list.txt     # use source training set as development set
 test_name=dev_asr
-tts_model_dir=                                  # If use downloaded model,
+tts_model_dir=$out_dir/exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1                                  # If use downloaded model,
                                                 # set to, ex. `downloads/tts1_TEF1/exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1`
                                                 # If use manually trained model,
                                                 # set to, ex. `exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1`
@@ -116,10 +119,10 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
         exit 1;
     fi
 
-    local/data_prep_task1.sh ${db_root} data/${org_set} ${spk} ${trans_type}
-    utils/data/resample_data_dir.sh ${fs} data/${org_set} # Downsample to fs from 24k
-    utils/fix_data_dir.sh data/${org_set}
-    utils/validate_data_dir.sh --no-feats data/${org_set}
+    local/data_prep_task1.sh ${db_root} $out_dir/data/${org_set} ${spk} ${trans_type}
+    utils/data/resample_data_dir.sh ${fs} $out_dir/data/${org_set} # Downsample to fs from 24k
+    utils/fix_data_dir.sh $out_dir/data/${org_set}
+    utils/validate_data_dir.sh --no-feats $out_dir/data/${org_set}
 fi
 
 feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}
@@ -128,18 +131,18 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     echo "stage 1: Feature Generation"
 
     # Trim silence parts at the begining and the end of audio
-    mkdir -p exp/trim_silence/${org_set}/figs  # avoid error
+    mkdir -p $out_dir/exp/trim_silence/${org_set}/figs  # avoid error
     trim_silence.sh --cmd "${train_cmd}" \
         --fs ${fs} \
         --win_length ${trim_win_length} \
         --shift_length ${trim_shift_length} \
         --threshold ${trim_threshold} \
         --min_silence ${trim_min_silence} \
-        data/${org_set} \
-        exp/trim_silence/${org_set}
+        $out_dir/data/${org_set} \
+        $out_dir/exp/trim_silence/${org_set}
 
     # Generate the fbank features; by default 80-dimensional fbanks on each frame
-    fbankdir=fbank
+    fbankdir=$out_dir/fbank
     make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
         --fs ${fs} \
         --fmax "${fmax}" \
@@ -148,24 +151,24 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         --n_shift ${n_shift} \
         --win_length "${win_length}" \
         --n_mels ${n_mels} \
-        data/${org_set} \
-        exp/make_fbank/${org_set} \
+        $out_dir/data/${org_set} \
+        $out_dir/exp/make_fbank/${org_set} \
         ${fbankdir}
 
     # make train/dev set according to lists
-    sed -e "s/^/${spk}_/" ${list_dir}/E_train_list.txt > data/${org_set}/E_train_list.txt
-    sed -e "s/^/${spk}_/" ${list_dir}/E_dev_list.txt > data/${org_set}/E_dev_list.txt
-    utils/subset_data_dir.sh --utt-list data/${org_set}/E_train_list.txt data/${org_set} data/${train_set}
-    utils/subset_data_dir.sh --utt-list data/${org_set}/E_dev_list.txt data/${org_set} data/${dev_set}
+    sed -e "s/^/${spk}_/" ${list_dir}/E_train_list.txt > $out_dir/data/${org_set}/E_train_list.txt
+    sed -e "s/^/${spk}_/" ${list_dir}/E_dev_list.txt > $out_dir/data/${org_set}/E_dev_list.txt
+    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/E_train_list.txt $out_dir/data/${org_set} $out_dir/data/${train_set}
+    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/E_dev_list.txt $out_dir/data/${org_set} $out_dir/data/${dev_set}
 
     # use pretrained model cmvn
     cmvn=$(find ${pretrained_model_dir}/${pretrained_model_name} -name "cmvn.ark" | head -n 1)
 
     # dump features for training
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        data/${train_set}/feats.scp ${cmvn} exp/dump_feats/${train_set} ${feat_tr_dir}
+        $out_dir/data/${train_set}/feats.scp ${cmvn} $out_dir/exp/dump_feats/${train_set} ${feat_tr_dir}
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        data/${dev_set}/feats.scp ${cmvn} exp/dump_feats/${dev_set} ${feat_dt_dir}
+        $out_dir/data/${dev_set}/feats.scp ${cmvn} $out_dir/exp/dump_feats/${dev_set} ${feat_dt_dir}
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
@@ -176,43 +179,44 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
 
     # make json labels using pretrained model dict
     data2json.sh --feat ${feat_tr_dir}/feats.scp --trans_type ${trans_type} \
-         data/${train_set} ${dict} > ${feat_tr_dir}/data.json
+         $out_dir/data/${train_set} ${dict} > ${feat_tr_dir}/data.json
     data2json.sh --feat ${feat_dt_dir}/feats.scp --trans_type ${trans_type} \
-         data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
+         $out_dir/data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     echo "stage 3: x-vector extraction"
     # Make MFCCs and compute the energy-based VAD for each dataset
-    mfccdir=mfcc
-    vaddir=mfcc
+    mfccdir=$out_dir/mfcc
+    vaddir=$out_dir/mfcc
     for name in ${train_set} ${dev_set}; do
-        utils/copy_data_dir.sh data/${name} data/${name}_mfcc_16k
-        utils/data/resample_data_dir.sh 16000 data/${name}_mfcc_16k
+        utils/copy_data_dir.sh $out_dir/data/${name} $out_dir/data/${name}_mfcc_16k
+        utils/data/resample_data_dir.sh 16000 $out_dir/data/${name}_mfcc_16k
         steps/make_mfcc.sh \
             --write-utt2num-frames true \
             --mfcc-config conf/mfcc.conf \
             --nj 1 --cmd "$train_cmd" \
-            data/${name}_mfcc_16k exp/make_mfcc_16k ${mfccdir}
-        utils/fix_data_dir.sh data/${name}_mfcc_16k
+            $out_dir/data/${name}_mfcc_16k \
+	    $out_dir/exp/make_mfcc_16k ${mfccdir}
+        utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
         sid/compute_vad_decision.sh --nj 1 --cmd "$train_cmd" \
-            data/${name}_mfcc_16k exp/make_vad ${vaddir}
-        utils/fix_data_dir.sh data/${name}_mfcc_16k
+            $out_dir/data/${name}_mfcc_16k $out_dir/exp/make_vad ${vaddir}
+        utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
     done
 
     # Check pretrained model existence
-    nnet_dir=exp/xvector_nnet_1a
+    nnet_dir=$out_dir/exp/xvector_nnet_1a
     if [ ! -e ${nnet_dir} ]; then
         echo "X-vector model does not exist. Download pre-trained model."
         wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
         tar xvf 0008_sitw_v2_1a.tar.gz
-        mv 0008_sitw_v2_1a/exp/xvector_nnet_1a exp
+        mv 0008_sitw_v2_1a/exp/xvector_nnet_1a $out_dir/exp
         rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
     fi
     # Extract x-vector
     for name in ${train_set} ${dev_set}; do
         sid/nnet3/xvector/extract_xvectors.sh --cmd "$train_cmd --mem 4G" --nj 1 \
-            ${nnet_dir} data/${name}_mfcc_16k \
+            ${nnet_dir} $out_dir/data/${name}_mfcc_16k \
             ${nnet_dir}/xvectors_${name}
     done
     # Update json
@@ -242,7 +246,7 @@ if [ -z ${tag} ]; then
 else
     expname=${train_set}_${backend}_${tag}
 fi
-expdir=exp/${expname}
+expdir=$out_dir/exp/${expname}
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     echo "stage 4: Text-to-speech model fine-tuning"
     
@@ -250,7 +254,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
 
     # copy x-vector into expdir
     # empty the scp file
-    xvec_dir=exp/xvector_nnet_1a/xvectors_${train_set}
+    xvec_dir=$out_dir/exp/xvector_nnet_1a/xvectors_${train_set}
     cp ${xvec_dir}/spk_xvector.ark ${expdir}
     sed "s~${xvec_dir}/~~" ${xvec_dir}/spk_xvector.scp > ${expdir}/spk_xvector.scp
 
@@ -262,7 +266,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
            --ngpu ${ngpu} \
            --minibatches ${N} \
            --outdir ${expdir}/results \
-           --tensorboard-dir tensorboard/${expname} \
+           --tensorboard-dir $out_dir/tensorboard/${expname} \
            --verbose ${verbose} \
            --seed ${seed} \
            --resume ${resume} \
@@ -390,7 +394,7 @@ if [ ${stage} -le 10 ] && [ ${stop_stage} -ge 10 ]; then
 fi
 
 pairname=${srcspk}_${trgspk}_eval
-expdir=exp/${srcspk}_${test_name}
+expdir=$out_dir/exp/${srcspk}_${test_name}
 [ ! -e ${expdir} ] && mkdir -p ${expdir}
 if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ]; then
     echo "stage 11: Recognize the eval set"
@@ -399,14 +403,14 @@ if [ ${stage} -le 11 ] && [ ${stop_stage} -ge 11 ]; then
         --db_root ${db_root} \
         --backend pytorch \
         --api v1 \
-        exp/${asr_model}_asr \
+        $out_dir/exp/${asr_model}_asr \
         ${expdir} \
         ${eval_db_root}/${srcspk} \
         ${srcspk} \
         ${test_list_file}
 
 fi
-    
+tts_model_dir=$out_dir/exp/${expname}
 if [ -z ${tts_model_dir} ]; then
     echo "Please specify tts_model_dir!"
     exit 1
