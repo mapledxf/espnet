@@ -6,8 +6,7 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 
-dataset=/output
-out_dir=/output
+out_dir=/home/data/xfding/train_result/tts
 
 # general configuration
 backend=pytorch
@@ -36,7 +35,7 @@ trim_win_length=1024
 trim_shift_length=256
 trim_min_silence=0.01
 
-trans_type=char  # char or phn
+trans_type=phn  # char or phn
 
 # config files
 train_config=conf/train_pytorch_transformer+spkemb.yaml
@@ -45,23 +44,23 @@ decode_config=conf/decode.yaml
 # decoding related
 model=model.loss.best
 voc=PWG                         # GL or PWG
-voc_expdir=$dataset/downloads/pwg_task1  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
+voc_expdir=$out_dir/downloads/pwg_task1  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
                                 # If use manually trained models, set to `../voc1/exp/<expdir>`
 voc_checkpoint=                 # If not specified, automatically set to the latest checkpoint 
 griffin_lim_iters=64            # the number of iterations of Griffin-Lim
 
 # pretrained model related
-pretrained_model_dir=$dataset/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
+pretrained_model_dir=$out_dir/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
                                 # If use manually trained models, set to `../libritts`
-pretrained_model_name=tts1          # If use provided pretrained models, only set to `tts1`
+pretrained_model_name=csmsc          # If use provided pretrained models, only set to `tts1`
                                 # If use manually trained models, only set to `tts1`, too
 finetuned_model_name=           # Only set to `tts1_[trgspk]`
 
 # dataset configuration
-db_root=$dataset/downloads/official_v1.0_training
-eval_db_root=$dataset/downloads/official_v1.0_training    # Same as `db_root` in training
+db_root=/home/data/xfding/dataset/tts/zh-m-4/zh
+eval_db_root=/home/data/xfding/dataset/tts/zh-m-4/zh
 list_dir=local/lists
-spk=TEF1 
+spk=csmsc
 
 # vc configuration
 srcspk=                                         # Ex. SEF1
@@ -105,7 +104,7 @@ if [ ${stage} -le -1 ] && [ ${stop_stage} -ge -1 ]; then
     
     if [ ! -d ${voc_expdir} ]; then
         echo "Downloading pretrained PWG model..."
-        local/pretrained_model_download.sh ${pretrained_model_dir} pwg_task1
+        local/pretrained_model_download.sh ${pretrained_model_dir} csmsc-pwg
     fi
     echo "PWG model exists: ${voc_expdir}"
 fi
@@ -118,8 +117,8 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
         echo "cd ${db_root}; ./run.sh --stop_stage -1; cd -"
         exit 1;
     fi
+    local/data_prep.sh ${db_root} $out_dir/data/${org_set}
 
-    local/data_prep_task1.sh ${db_root} $out_dir/data/${org_set} ${spk} ${trans_type}
     utils/data/resample_data_dir.sh ${fs} $out_dir/data/${org_set} # Downsample to fs from 24k
     utils/fix_data_dir.sh $out_dir/data/${org_set}
     utils/validate_data_dir.sh --no-feats $out_dir/data/${org_set}
