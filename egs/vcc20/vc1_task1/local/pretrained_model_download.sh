@@ -31,7 +31,8 @@ if [ $# != 2 ]; then
 fi
 
 case "${pretrained_model}" in
-    "csmsc")		share_url="https://drive.google.com/open?id=1bTSygvonv5TS6-iuYsOIUWpN2atGnyhZ" ;;
+#    "csmsc")		share_url="https://drive.google.com/open?id=1bTSygvonv5TS6-iuYsOIUWpN2atGnyhZ" ;;
+    "csmsc")            share_url="https://drive.google.com/open?id=1T8thxkAxjGFPXPWPTcKLvHnd6lG0-82R" ;;
     "csmsc-pwg")	share_url="https://drive.google.com/open?id=10M6H88jEUGbRWBmU1Ff2VaTmOAeL8CEy" ;;
     "tts1")             share_url="https://drive.google.com/open?id=1Xj73mDPuuPH8GsyNO8GnOC3mn0_OK4g3" ;;
     "tts1_en_de")       share_url="https://drive.google.com/open?id=1UvtFkqdkE8bOCKWXlEltc746JsCKaTMX" ;;
