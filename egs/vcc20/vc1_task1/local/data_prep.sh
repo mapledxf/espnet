@@ -38,8 +38,11 @@ echo "Successfully finished making wav.scp, utt2spk."
 
 utils/utt2spk_to_spk2utt.pl ${utt2spk} > ${spk2utt}
 echo "Successfully finished making spk2utt."
-grep "^4" ${db}/zh.txt | sed -e 's/#[0-9]//g' | sed -e 's/[；：，。（）？！]//g' > ${db}/script.txt
+grep "^4" ${db}/zh.txt \
+	| sed -e 's/#[0-9]//g' \
+	| sed -e 's/[。]//g' \
+       > ${db}/script.txt
 
 local/clean_text_mandarin.py \
-            ${db}/script.txt \
+            ${db}/script1.txt \
             ${utt2spk} 'phn' 'M' 'csmsc' > ${text}
