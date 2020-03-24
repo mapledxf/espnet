@@ -29,7 +29,7 @@ segments=${data_dir}/segments
 [ -e ${segments} ] && rm ${segments}
 
 # make scp, utt2spk, and spk2utt
-find ${db}/Wave -name "*.wav" -follow | sort | while read -r filename;do
+find ${db} -name "*.wav" -follow | sort | while read -r filename;do
     id="$(basename ${filename} .wav)"
     echo "${id} ${filename}" >> ${scp}
     echo "${id} csmsc" >> ${utt2spk}

@@ -13,7 +13,7 @@ backend=pytorch
 stage=-1
 stop_stage=100
 ngpu=1       # number of gpus ("0" uses cpu, otherwise use gpu)
-nj=10        # numebr of parallel jobs
+nj=5        # numebr of parallel jobs
 dumpdir=$out_dir/dump # directory to dump full features
 verbose=0    # verbose option (if set > 0, get more log)
 N=0          # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
@@ -38,7 +38,8 @@ trim_min_silence=0.01
 trans_type=phn  # char or phn
 
 # config files
-train_config=conf/train_pytorch_transformer+spkemb.yaml
+#train_config=conf/train_pytorch_transformer+spkemb.yaml
+train_config=conf/train_fastspeech.v3.single.yaml
 decode_config=conf/decode.yaml
 
 # decoding related
@@ -52,7 +53,7 @@ griffin_lim_iters=64            # the number of iterations of Griffin-Lim
 # pretrained model related
 pretrained_model_dir=$out_dir/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
                                 # If use manually trained models, set to `../libritts`
-pretrained_model_name=csmsc          # If use provided pretrained models, only set to `tts1`
+pretrained_model_name=csmsc        # If use provided pretrained models, only set to `tts1`
                                 # If use manually trained models, only set to `tts1`, too
 finetuned_model_name=           # Only set to `tts1_[trgspk]`
 
@@ -132,7 +133,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     # Trim silence parts at the begining and the end of audio
     mkdir -p $out_dir/exp/trim_silence/${org_set}/figs  # avoid error
     trim_silence.sh --cmd "${train_cmd}" \
-	--nj 5 \
+	--nj ${nj} \
         --fs ${fs} \
         --win_length ${trim_win_length} \
         --shift_length ${trim_shift_length} \
@@ -156,20 +157,27 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         ${fbankdir}
 
     # make train/dev set according to lists
-#    sed -e "s/^/${spk}_/" ${list_dir}/E_train_list.txt > $out_dir/data/${org_set}/E_train_list.txt
-#    sed -e "s/^/${spk}_/" ${list_dir}/E_dev_list.txt > $out_dir/data/${org_set}/E_dev_list.txt
-#    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/E_train_list.txt $out_dir/data/${org_set} $out_dir/data/${train_set}
-#    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/E_dev_list.txt $out_dir/data/${org_set} $out_dir/data/${dev_set}
-    cp -r $out_dir/data/${org_set}/* $out_dir/data/${train_set}/
+#    sed -e "s/^/${spk}_/" ${list_dir}/CSMSC_train_list.txt > $out_dir/data/${org_set}/CSMSC_train_list.txt
+#    sed -e "s/^/${spk}_/" ${list_dir}/CSMSC_dev_list.txt > $out_dir/data/${org_set}/CSMSC_dev_list.txt
+    cp ${list_dir}/CSMSC_train_list.txt $out_dir/data/${org_set}/
+    cp ${list_dir}/CSMSC_dev_list.txt $out_dir/data/${org_set}/
+    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/CSMSC_train_list.txt $out_dir/data/${org_set} $out_dir/data/${train_set}
+    utils/subset_data_dir.sh --utt-list $out_dir/data/${org_set}/CSMSC_dev_list.txt $out_dir/data/${org_set} $out_dir/data/${dev_set}
 
     # use pretrained model cmvn
     cmvn=$(find ${pretrained_model_dir}/${pretrained_model_name} -name "cmvn.ark" | head -n 1)
 
     # dump features for training
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        $out_dir/data/${train_set}/feats.scp ${cmvn} $out_dir/exp/dump_feats/${train_set} ${feat_tr_dir}
-#    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-#        $out_dir/data/${dev_set}/feats.scp ${cmvn} $out_dir/exp/dump_feats/${dev_set} ${feat_dt_dir}
+        $out_dir/data/${train_set}/feats.scp \
+	${cmvn} \
+	$out_dir/exp/dump_feats/${train_set} \
+	${feat_tr_dir}
+    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
+        $out_dir/data/${dev_set}/feats.scp \
+	${cmvn} \
+	$out_dir/exp/dump_feats/${dev_set} \
+	${feat_dt_dir}
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
@@ -181,8 +189,8 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     # make json labels using pretrained model dict
     data2json.sh --feat ${feat_tr_dir}/feats.scp --trans_type ${trans_type} \
          $out_dir/data/${train_set} ${dict} > ${feat_tr_dir}/data.json
-#    data2json.sh --feat ${feat_dt_dir}/feats.scp --trans_type ${trans_type} \
-#         $out_dir/data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
+    data2json.sh --feat ${feat_dt_dir}/feats.scp --trans_type ${trans_type} \
+         $out_dir/data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
@@ -190,8 +198,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     # Make MFCCs and compute the energy-based VAD for each dataset
     mfccdir=$out_dir/mfcc
     vaddir=$out_dir/mfcc
-#    for name in ${train_set} ${dev_set}; do
-    for name in ${train_set} ; do
+    for name in ${train_set} ${dev_set}; do
         utils/copy_data_dir.sh $out_dir/data/${name} $out_dir/data/${name}_mfcc_16k
         utils/data/resample_data_dir.sh 16000 $out_dir/data/${name}_mfcc_16k
         steps/make_mfcc.sh \
@@ -216,15 +223,13 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
     fi
     # Extract x-vector
-#    for name in ${train_set} ${dev_set}; do
-    for name in ${train_set} ; do
+    for name in ${train_set} ${dev_set}; do
         sid/nnet3/xvector/extract_xvectors.sh --cmd "$train_cmd --mem 4G" --nj 1 \
             ${nnet_dir} $out_dir/data/${name}_mfcc_16k \
             ${nnet_dir}/xvectors_${name}
     done
     # Update json
-#    for name in ${train_set} ${dev_set}; do
-    for name in ${train_set} ; do
+    for name in ${train_set} ${dev_set}; do
         local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
     done
 fi
@@ -275,7 +280,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
            --seed ${seed} \
            --resume ${resume} \
            --train-json ${tr_json} \
-#           --valid-json ${dt_json} \
+           --valid-json ${dt_json} \
            --config ${train_config}
 fi
 
