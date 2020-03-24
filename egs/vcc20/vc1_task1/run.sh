@@ -39,8 +39,9 @@ trans_type=phn  # char or phn
 
 # config files
 #train_config=conf/train_pytorch_transformer+spkemb.yaml
-train_config=conf/train_fastspeech.v3.single.yaml
-decode_config=conf/decode.yaml
+train_config=conf/train_pytorch_transformer.v1.single.yaml
+#train_config=conf/train_fastspeech.v3.single.yaml
+decode_config=conf/decode-csmsc.yaml
 
 # decoding related
 model=model.loss.best
@@ -53,7 +54,7 @@ griffin_lim_iters=64            # the number of iterations of Griffin-Lim
 # pretrained model related
 pretrained_model_dir=$out_dir/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
                                 # If use manually trained models, set to `../libritts`
-pretrained_model_name=csmsc        # If use provided pretrained models, only set to `tts1`
+pretrained_model_name=csmsc-transformer        # If use provided pretrained models, only set to `tts1`
                                 # If use manually trained models, only set to `tts1`, too
 finetuned_model_name=           # Only set to `tts1_[trgspk]`
 
@@ -67,9 +68,12 @@ spk=csmsc
 srcspk=                                         # Ex. SEF1
 trgspk=                                         # Ex. TEF1
 asr_model="librispeech.transformer.ngpu4"
-test_list_file=local/lists/E_train_list.txt     # use source training set as development set
+#test_list_file=local/lists/E_train_list.txt     # use source training set as development set
+test_list_file=local/lists/CSMSC_train_list.txt     # use source training set as development set
 test_name=dev_asr
-tts_model_dir=$out_dir/exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1                                  # If use downloaded model,
+#tts_model_dir=$out_dir/exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1                                  
+tts_model_dir=$out_dir/exp/csmsc_train_pytorch_train_pytorch_transformer.v1.single.csmsc-transformer
+						# If use downloaded model,
                                                 # set to, ex. `downloads/tts1_TEF1/exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1`
                                                 # If use manually trained model,
                                                 # set to, ex. `exp/TEF1_train_pytorch_train_pytorch_transformer+spkemb.tts1`
