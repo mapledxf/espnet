@@ -54,7 +54,8 @@ grad-clip: 1.0
 weight-decay: 0.0
 patience: 0
 epochs: 700  # 700 epochs * 350 batches / 2 accum-grad = 122,500 iters
-teacher-model: exp/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/model.last1.avg.best
+#teacher-model: exp/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/model.last1.avg.best
+teacher-model: /home/data/xfding/train_dataset/tts/downloads/csmsc-transformer/exp/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/model.last1.avg.best
 
 # other
 save-interval-epoch: 50
