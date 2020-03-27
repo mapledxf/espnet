@@ -1,0 +1,179 @@
+#!/bin/bash
+
+# Copyright 2019 Tomoki Hayashi
+#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+
+. ./path.sh || exit 1;
+. ./cmd.sh || exit 1;
+
+out_dir=/home/data/xfding/train_result/tts
+# general configuration
+backend=pytorch
+stage=-1
+stop_stage=100
+ngpu=1       # number of gpus ("0" uses cpu, otherwise use gpu)
+nj=32        # numebr of parallel jobs
+dumpdir=$out_dir/dump # directory to dump full features
+verbose=1    # verbose option (if set > 0, get more log)
+N=0          # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
+seed=1       # random seed number
+resume=""    # the snapshot path to resume (if set empty, no effect)
+
+# feature extraction related
+fs=24000        # sampling frequency
+fmax=7600       # maximum frequency
+fmin=80         # minimum frequency
+n_mels=80       # number of mel basis
+n_fft=2048      # number of fft points
+n_shift=300     # number of shift points
+win_length=1200 # window length
+
+# config files
+train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
+#train_config=conf/tuning/train_fastspeech.v3.single.yaml
+decode_config=conf/decode.yaml
+
+# decoding related
+model=model.loss.best
+n_average=1 # if > 0, the model averaged with n_average ckpts will be used instead of model.loss.best
+griffin_lim_iters=64  # the number of iterations of Griffin-Lim
+
+# exp tag
+tag="" # tag for managing experiments.
+
+. utils/parse_options.sh || exit 1;
+
+# Set bash to 'debug' mode, it will exit on :
+# -e 'error', -u 'undefined variable', -o ... 'error in pipeline', -x 'print commands',
+set -e
+set -u
+set -o pipefail
+
+
+openslr_aishell=/home/data/xfding/dataset/asr/aishell/data_aishell
+aishell_spk_info=/home/data/xfding/dataset/asr/aishell/resource_aishell/speaker.info
+csmsc_data=/home/data/xfding/dataset/tts/csmsc/CSMSC
+cmlr_data=/home/data/xfding/dataset/tts/cmlr
+
+if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
+    ### Task dependent. You have to make data the following preparation part by yourself.
+    ### But you can utilize Kaldi recipes in most cases
+    echo "stage 0: Data preparation"
+    echo "stage 0: Prepare csmsc"
+    local/data_prep.sh $csmsc_data $out_dir/data/csmsc
+    # Downsample to fs from 48k
+    utils/data/resample_data_dir.sh ${fs} $out_dir/data/csmsc
+
+    echo "stage 0: Prepare CMLR"
+    local/cmlr_data_prep.sh \
+	    $cmlr_data \
+	    $out_dir/data/cmlr || exit 1;
+    utils/data/resample_data_dir.sh ${fs} $out_dir/data/cmlr/train
+
+    echo "stage 0: Prepare aishell"
+#    local/aishell_data_prep.sh \
+#	    $openslr_aishell \
+#            $aishell_spk_info \
+#	    $out_dir/data/aishell || exit 1;
+#    for sets in train dev test; do
+#    	utils/data/resample_data_dir.sh ${fs} $out_dir/data/aishell/$sets
+#    done
+
+    echo "stage 0: combine data"
+    utils/combine_data.sh $out_dir/data/train \
+       $out_dir/data/cmlr/train $out_dir/data/csmsc || exit 1;
+#        $out_dir/data/aishell/train $out_dir/data/aishell/dev $out_dir/data/aishell/test $out_dir/data/csmsc || exit 1;
+
+    utils/validate_data_dir.sh --no-feats $out_dir/data/train
+fi
+
+train_set="train_no_dev"
+train_dev="dev"
+
+feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}
+feat_dt_dir=${dumpdir}/${train_dev}; mkdir -p ${feat_dt_dir}
+if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
+    ### Task dependent. You have to design training and dev sets by yourself.
+    ### But you can utilize Kaldi recipes in most cases
+    echo "stage 1: Feature Generation"
+
+    # Generate the fbank features; by default 80-dimensional fbanks on each frame
+    fbankdir=$out_dir/fbank
+    make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
+        --fs ${fs} \
+        --fmax "${fmax}" \
+        --fmin "${fmin}" \
+        --n_fft ${n_fft} \
+        --n_shift ${n_shift} \
+        --win_length "${win_length}" \
+        --n_mels ${n_mels} \
+        $out_dir/data/train \
+        $out_dir/exp/make_fbank/train \
+        ${fbankdir}
+    
+    n_total=$(wc -l < $out_dir/data/train/wav.scp)
+    echo total set:$n_total
+    n_dev=$(($n_total * 2 / 100))
+    n_train=$(($n_total - $n_dev))
+    echo train set:$n_train, dev set:$n_dev
+    # make a dev set
+    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${train_dev}
+    utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
+
+    # compute statistics for global mean-variance normalization
+    compute-cmvn-stats scp:$out_dir/data/${train_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark
+
+    # dump features for training
+    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
+        $out_dir/data/${train_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark $out_dir/exp/dump_feats/train ${feat_tr_dir}
+    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
+        $out_dir/data/${train_dev}/feats.scp $out_dir/data/${train_set}/cmvn.ark $out_dir/exp/dump_feats/dev ${feat_dt_dir}
+fi
+
+if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
+    echo "stage 2: Dictionary and Json Data Preparation"
+
+    dict=$out_dir/data/lang_phn/${train_set}_units.txt
+    echo "dictionary: ${dict}"
+
+    ### Task dependent. You have to check non-linguistic symbols used in the corpus.
+    mkdir -p $out_dir/data/lang_phn/
+    echo "<unk> 1" > ${dict} # <unk> must be 1, 0 will be used for padding idx
+    text2token.py -s 1 -n 1 --trans_type phn $out_dir/data/${train_set}/text | cut -f 2- -d" " | tr " " "\n" \
+    | sort | uniq | grep -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${dict}
+    wc -l ${dict}
+
+    # make json labels
+    data2json.sh --feat ${feat_tr_dir}/feats.scp --trans_type phn \
+         $out_dir/data/${train_set} ${dict} > ${feat_tr_dir}/data.json
+    data2json.sh --feat ${feat_dt_dir}/feats.scp --trans_type phn \
+         $out_dir/data/${train_dev} ${dict} > ${feat_dt_dir}/data.json
+fi
+
+if [ -z ${tag} ]; then
+    expname=${train_set}_${backend}_$(basename ${train_config%.*})
+else
+    expname=${train_set}_${backend}_${tag}
+fi
+expdir=$out_dir/exp/${expname}
+mkdir -p ${expdir}
+if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+    echo "stage 3: Text-to-speech model training"
+    tr_json=${feat_tr_dir}/data.json
+    dt_json=${feat_dt_dir}/data.json
+    ${cuda_cmd} --gpu ${ngpu} ${expdir}/train.log \
+        tts_train.py \
+           --backend ${backend} \
+           --ngpu ${ngpu} \
+           --minibatches ${N} \
+           --outdir ${expdir}/results \
+           --tensorboard-dir $out_dir/tensorboard/${expname} \
+           --verbose ${verbose} \
+           --seed ${seed} \
+           --resume ${resume} \
+           --train-json ${tr_json} \
+           --valid-json ${dt_json} \
+           --config ${train_config}
+fi
+
+echo "Finished."
