@@ -6,7 +6,7 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 
-out_dir=/home/data/xfding/train_result/tts
+out_dir=/home/data/xfding/train_result/vc
 
 # general configuration
 backend=pytorch
@@ -38,23 +38,24 @@ trim_min_silence=0.01
 trans_type=phn  # char or phn
 
 # config files
-#train_config=conf/train_pytorch_transformer+spkemb.yaml
-train_config=conf/train_pytorch_transformer.v1.single.yaml
-#train_config=conf/train_fastspeech.v3.single.yaml
+#train_config=conf/train_pytorch_transformer.v1.single.yaml
+train_config=conf/train_fastspeech.v3.single.yaml
 decode_config=conf/decode-csmsc.yaml
 
 # decoding related
 model=model.loss.best
 voc=PWG                         # GL or PWG
-voc_expdir=$out_dir/downloads/pwg_task1  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
+voc_expdir=$out_dir/downloads/pwg_csmsc  # If use provided pretrained models, set to desired dir, ex. `downloads/pwg_task1`
                                 # If use manually trained models, set to `../voc1/exp/<expdir>`
 voc_checkpoint=                 # If not specified, automatically set to the latest checkpoint 
 griffin_lim_iters=64            # the number of iterations of Griffin-Lim
 
 # pretrained model related
-pretrained_model_dir=$out_dir/downloads  # If use provided pretrained models, set to desired dir, ex. `downloads`
+pretrained_model_dir=/home/data/xfding/pretrained/tts  # If use provided pretrained models, set to desired dir, ex. `downloads`
                                 # If use manually trained models, set to `../libritts`
-pretrained_model_name=csmsc-transformer        # If use provided pretrained models, only set to `tts1`
+#pretrained_model_name=csmsc-transformer        
+pretrained_model_name=csmsc-fastspeech
+				# If use provided pretrained models, only set to `tts1`
                                 # If use manually trained models, only set to `tts1`, too
 finetuned_model_name=           # Only set to `tts1_[trgspk]`
 
@@ -218,13 +219,10 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     done
 
     # Check pretrained model existence
-    nnet_dir=$out_dir/exp/xvector_nnet_1a
+    nnet_dir=$out_dir/xvector_nnet_1a
     if [ ! -e ${nnet_dir} ]; then
         echo "X-vector model does not exist. Download pre-trained model."
-        wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
-        tar xvf 0008_sitw_v2_1a.tar.gz
-        mv 0008_sitw_v2_1a/exp/xvector_nnet_1a $out_dir/exp
-        rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
+    	download_from_google_drive.sh https://drive.google.com/open?id=1D_yXTVbnSx4nJ44rT4Dqp7httr2eWAX8 ${out_dir} ".tar.gz"
     fi
     # Extract x-vector
     for name in ${train_set} ${dev_set}; do
