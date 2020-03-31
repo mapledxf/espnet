@@ -87,11 +87,11 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     utils/validate_data_dir.sh --no-feats $out_dir/data/train
 fi
 
-train_set="train_no_dev"
-train_dev="dev"
+train_set="train"
+dev_set="dev"
 
 feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}
-feat_dt_dir=${dumpdir}/${train_dev}; mkdir -p ${feat_dt_dir}
+feat_dt_dir=${dumpdir}/${dev_set}; mkdir -p ${feat_dt_dir}
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     ### Task dependent. You have to design training and dev sets by yourself.
     ### But you can utilize Kaldi recipes in most cases
@@ -117,7 +117,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     n_train=$(($n_total - $n_dev))
     echo train set:$n_train, dev set:$n_dev
     # make a dev set
-    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${train_dev}
+    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${dev_set}
     utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
 
     # compute statistics for global mean-variance normalization
@@ -127,7 +127,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
         $out_dir/data/${train_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark $out_dir/exp/dump_feats/train ${feat_tr_dir}
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        $out_dir/data/${train_dev}/feats.scp $out_dir/data/${train_set}/cmvn.ark $out_dir/exp/dump_feats/dev ${feat_dt_dir}
+        $out_dir/data/${dev_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark $out_dir/exp/dump_feats/dev ${feat_dt_dir}
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
@@ -147,7 +147,50 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     data2json.sh --feat ${feat_tr_dir}/feats.scp --trans_type phn \
          $out_dir/data/${train_set} ${dict} > ${feat_tr_dir}/data.json
     data2json.sh --feat ${feat_dt_dir}/feats.scp --trans_type phn \
-         $out_dir/data/${train_dev} ${dict} > ${feat_dt_dir}/data.json
+         $out_dir/data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
+fi
+
+if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
+    echo "stage 3: x-vector extraction"
+    # Make MFCCs and compute the energy-based VAD for each dataset
+    mfccdir=$out_dir/mfcc
+    vaddir=$out_dir/mfcc
+    for name in ${train_set} ${dev_set}; do
+        utils/copy_data_dir.sh $out_dir/data/${name} $out_dir/data/${name}_mfcc_16k
+        utils/data/resample_data_dir.sh 16000 $out_dir/data/${name}_mfcc_16k
+        steps/make_mfcc.sh \
+            --write-utt2num-frames true \
+            --mfcc-config conf/mfcc.conf \
+            --nj $nj --cmd "$train_cmd" \
+            $out_dir/data/${name}_mfcc_16k \
+	    $out_dir/exp/make_mfcc_16k \
+	    ${mfccdir}
+        utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
+        sid/compute_vad_decision.sh --nj $nj --cmd "$train_cmd" \
+            $out_dir/data/${name}_mfcc_16k \
+	    $out_dir/exp/make_vad \
+	    ${vaddir}
+        utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
+    done
+
+    # Check pretrained model existence
+    nnet_dir=$out_dir/exp/xvector_nnet_1a
+#    nnet_dir=/home/data/xfding/pretrained/tts/0008_sitw_v2_1a/exp/xvector_nnet_1a
+    if [ ! -e ${nnet_dir} ]; then
+        echo "X-vector model does not exist. Download pre-trained model."
+    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir} ".tar.gz"
+    fi
+    # Extract x-vector
+    for name in ${train_set} ${dev_set}; do
+        sid/nnet3/xvector/extract_xvectors.sh --cmd "$train_cmd --mem 4G" --nj $nj \
+            ${nnet_dir} \
+	    $out_dir/data/${name}_mfcc_16k \
+            ${nnet_dir}/xvectors_${name}
+    done
+    # Update json
+    for name in ${train_set} ${dev_set}; do
+        local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
+    done
 fi
 
 if [ -z ${tag} ]; then
@@ -157,8 +200,8 @@ else
 fi
 expdir=$out_dir/exp/${expname}
 mkdir -p ${expdir}
-if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-    echo "stage 3: Text-to-speech model training"
+if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
+    echo "stage 4: Text-to-speech model training"
     tr_json=${feat_tr_dir}/data.json
     dt_json=${feat_dt_dir}/data.json
     ${cuda_cmd} --gpu ${ngpu} ${expdir}/train.log \
