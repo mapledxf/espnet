@@ -20,7 +20,7 @@ seed=1       # random seed number
 resume=""    # the snapshot path to resume (if set empty, no effect)
 
 # feature extraction related
-fs=24000        # sampling frequency
+fs=16000        # sampling frequency
 fmax=7600       # maximum frequency
 fmin=80         # minimum frequency
 n_mels=80       # number of mel basis
@@ -97,20 +97,6 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     ### But you can utilize Kaldi recipes in most cases
     echo "stage 1: Feature Generation"
 
-    # Generate the fbank features; by default 80-dimensional fbanks on each frame
-    fbankdir=$out_dir/fbank
-    make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
-        --fs ${fs} \
-        --fmax "${fmax}" \
-        --fmin "${fmin}" \
-        --n_fft ${n_fft} \
-        --n_shift ${n_shift} \
-        --win_length "${win_length}" \
-        --n_mels ${n_mels} \
-        $out_dir/data/train \
-        $out_dir/exp/make_fbank/train \
-        ${fbankdir}
-    
     n_total=$(wc -l < $out_dir/data/train/wav.scp)
     echo total set:$n_total
     n_dev=$(($n_total * 2 / 100))
@@ -119,6 +105,22 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     # make a dev set
     utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${dev_set}
     utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
+
+    # Generate the fbank features; by default 80-dimensional fbanks on each frame
+    fbankdir=$out_dir/fbank
+    for x in train dev test; do
+        make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
+            --fs ${fs} \
+            --fmax "${fmax}" \
+            --fmin "${fmin}" \
+            --n_fft ${n_fft} \
+            --n_shift ${n_shift} \
+            --win_length "${win_length}" \
+            --n_mels ${n_mels} \
+            $out_dir/data/${x} \
+            $out_dir/exp/make_fbank/${x} \
+            ${fbankdir}
+    done
 
     # compute statistics for global mean-variance normalization
     compute-cmvn-stats scp:$out_dir/data/${train_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark
@@ -168,8 +170,8 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
         sid/compute_vad_decision.sh --nj $nj --cmd "$train_cmd" \
             $out_dir/data/${name}_mfcc_16k \
-	    $out_dir/exp/make_vad \
-	    ${vaddir}
+            $out_dir/exp/make_vad \
+            ${vaddir}
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
     done
 
@@ -178,7 +180,7 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 #    nnet_dir=/home/data/xfding/pretrained/tts/0008_sitw_v2_1a/exp/xvector_nnet_1a
     if [ ! -e ${nnet_dir} ]; then
         echo "X-vector model does not exist. Download pre-trained model."
-    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir} ".tar.gz"
+    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir}/exp ".tar.gz"
     fi
     # Extract x-vector
     for name in ${train_set} ${dev_set}; do
