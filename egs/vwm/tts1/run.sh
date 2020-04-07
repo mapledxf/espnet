@@ -58,14 +58,20 @@ set -o pipefail
 
 openslr_aishell=/home/data/xfding/dataset/asr/aishell/data_aishell
 aishell_spk_info=/home/data/xfding/dataset/asr/aishell/resource_aishell/speaker.info
+aidatatang_200zh=/home/zlj/Datasets/aidatatang_200zh
 csmsc_data=/home/data/xfding/dataset/tts/csmsc/CSMSC
 cmlr_data=/home/data/xfding/dataset/tts/cmlr
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     ### Task dependent. You have to make data the following preparation part by yourself.
     ### But you can utilize Kaldi recipes in most cases
-#    echo "stage 0: Data preparation"
-#    echo "stage 0: Prepare csmsc"
+    echo "stage 0: Data preparation"
+
+    vwm_data_prepare=$out_dir/vwm_data_prepare
+
+    if [ ! -d  $vwm_data_prepare ]; then
+        git clone https://github.com/mapledxf/vwm_data_prepare.git $vwm_data_prepare
+    fi
 #    local/data_prep.sh $csmsc_data $out_dir/data/csmsc
     # Downsample to fs from 48k
 #    utils/data/resample_data_dir.sh ${fs} $out_dir/data/csmsc
@@ -85,10 +91,11 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
 #    	utils/data/resample_data_dir.sh ${fs} $out_dir/data/aishell/$sets
 #    done
    
-    /home/zlj/dxf/vwm_data_prepare/aidatatang_data_prep.sh /home/zlj/Datasets/aidatatang_200zh $out_dir/data
 #    echo "stage 0: combine data"
 #    utils/combine_data.sh $out_dir/data/train \
 #        $out_dir/data/aidatatang_200zh/train $out_dir/data/aidatatang_200zh/dev $out_dir/data/aidatatang_200zh/test || exit 1;
+
+    $vwm_data_prepare/aidatatang_data_prep.sh --is_tts true $aidatatang_200zh $out_dir/data
 
     utils/validate_data_dir.sh --no-feats $out_dir/data/train
     utils/validate_data_dir.sh --no-feats $out_dir/data/test
@@ -173,8 +180,7 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-    echo "stage 3: x-vector extraction"
-    # Make MFCCs and compute the energy-based VAD for each dataset
+    echo "stage 3: MFCC generation"
     mfccdir=$out_dir/mfcc
     vaddir=$out_dir/mfcc
     for name in ${train_set} ${dev_set}; do
@@ -184,22 +190,25 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
             --mfcc-config conf/mfcc.conf \
             --nj $nj --cmd "$train_cmd" \
             $out_dir/data/${name}_mfcc_16k \
-	    $out_dir/exp/make_mfcc_16k \
-	    ${mfccdir}
+        $out_dir/exp/make_mfcc_16k \
+        ${mfccdir}
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
         sid/compute_vad_decision.sh --nj $nj --cmd "$train_cmd" \
             $out_dir/data/${name}_mfcc_16k \
-	        $out_dir/exp/make_vad \
-	        ${vaddir}
+            $out_dir/exp/make_vad \
+            ${vaddir}
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
     done
+fi
 
+if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
+    echo "stage 4: x-vector extraction"
     # Check pretrained model existence
     nnet_dir=$out_dir/exp/xvector_nnet_1a
 #    nnet_dir=/home/data/xfding/pretrained/tts/0008_sitw_v2_1a/exp/xvector_nnet_1a
     if [ ! -e ${nnet_dir} ]; then
         echo "X-vector model does not exist. Download pre-trained model."
-    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir}/exp ".tar.gz"
+    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir}/exp/ ".tar.gz"
     fi
     # Extract x-vector
     for name in ${train_set} ${dev_set}; do
@@ -208,9 +217,9 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 	    $out_dir/data/${name}_mfcc_16k \
             ${nnet_dir}/xvectors_${name}
     done
-for name in ${train_set} ${dev_set}; do
-    local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
-done
+    for name in ${train_set} ${dev_set}; do
+        local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
+    done
 fi
 
 if [ -z ${tag} ]; then
@@ -220,8 +229,8 @@ else
 fi
 expdir=$out_dir/exp/${expname}
 mkdir -p ${expdir}
-if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
-    echo "stage 4: Text-to-speech model training"
+if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
+    echo "stage 5: Text-to-speech model training"
     tr_json=${feat_tr_dir}/data.json
     dt_json=${feat_dt_dir}/data.json
     ${cuda_cmd} --gpu ${ngpu} ${expdir}/train.log \
@@ -237,6 +246,20 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
            --train-json ${tr_json} \
            --valid-json ${dt_json} \
            --config ${train_config}
+fi
+
+if [ ${n_average} -gt 0 ]; then
+    model=model.last${n_average}.avg.best
+fi
+
+if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
+    echo "stage 5: Decoding"
+    if [ ${n_average} -gt 0 ]; then
+        average_checkpoints.py --backend ${backend} \
+                               --snapshots ${expdir}/results/snapshot.ep.* \
+                               --out ${expdir}/results/${model} \
+                               --num ${n_average}
+    fi
 fi
 
 echo "Finished."
