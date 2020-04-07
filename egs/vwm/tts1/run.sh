@@ -5,8 +5,8 @@
 
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
-
-out_dir=/home/data/xfding/train_result/tts
+#/home/data/xfding/train_result/tts
+out_dir=/home/zlj/dxf/train_result/tts
 # general configuration
 backend=pytorch
 stage=-1
@@ -28,8 +28,14 @@ n_fft=2048      # number of fft points
 n_shift=300     # number of shift points
 win_length=1200 # window length
 
+# silence part trimming related
+trim_threshold=25 # (in decibels)
+trim_win_length=1024
+trim_shift_length=256
+trim_min_silence=0.01
+
 # config files
-train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
+train_config=conf/train_pytorch_transformer+spkemb.yaml
 #train_config=conf/tuning/train_fastspeech.v3.single.yaml
 decode_config=conf/decode.yaml
 
@@ -58,19 +64,19 @@ cmlr_data=/home/data/xfding/dataset/tts/cmlr
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     ### Task dependent. You have to make data the following preparation part by yourself.
     ### But you can utilize Kaldi recipes in most cases
-    echo "stage 0: Data preparation"
-    echo "stage 0: Prepare csmsc"
-    local/data_prep.sh $csmsc_data $out_dir/data/csmsc
+#    echo "stage 0: Data preparation"
+#    echo "stage 0: Prepare csmsc"
+#    local/data_prep.sh $csmsc_data $out_dir/data/csmsc
     # Downsample to fs from 48k
-    utils/data/resample_data_dir.sh ${fs} $out_dir/data/csmsc
+#    utils/data/resample_data_dir.sh ${fs} $out_dir/data/csmsc
 
-    echo "stage 0: Prepare CMLR"
-    local/cmlr_data_prep.sh \
-	    $cmlr_data \
-	    $out_dir/data/cmlr || exit 1;
-    utils/data/resample_data_dir.sh ${fs} $out_dir/data/cmlr/train
+#    echo "stage 0: Prepare CMLR"
+#    local/cmlr_data_prep.sh \
+#	    $cmlr_data \
+#	    $out_dir/data/cmlr || exit 1;
+#    utils/data/resample_data_dir.sh ${fs} $out_dir/data/cmlr/train
 
-    echo "stage 0: Prepare aishell"
+#    echo "stage 0: Prepare aishell"
 #    local/aishell_data_prep.sh \
 #	    $openslr_aishell \
 #            $aishell_spk_info \
@@ -78,13 +84,15 @@ if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
 #    for sets in train dev test; do
 #    	utils/data/resample_data_dir.sh ${fs} $out_dir/data/aishell/$sets
 #    done
-
-    echo "stage 0: combine data"
-    utils/combine_data.sh $out_dir/data/train \
-       $out_dir/data/cmlr/train $out_dir/data/csmsc || exit 1;
-#        $out_dir/data/aishell/train $out_dir/data/aishell/dev $out_dir/data/aishell/test $out_dir/data/csmsc || exit 1;
+   
+    /home/zlj/dxf/vwm_data_prepare/aidatatang_data_prep.sh /home/zlj/Datasets/aidatatang_200zh $out_dir/data
+#    echo "stage 0: combine data"
+#    utils/combine_data.sh $out_dir/data/train \
+#        $out_dir/data/aidatatang_200zh/train $out_dir/data/aidatatang_200zh/dev $out_dir/data/aidatatang_200zh/test || exit 1;
 
     utils/validate_data_dir.sh --no-feats $out_dir/data/train
+    utils/validate_data_dir.sh --no-feats $out_dir/data/test
+    utils/validate_data_dir.sh --no-feats $out_dir/data/dev
 fi
 
 train_set="train"
@@ -97,18 +105,30 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     ### But you can utilize Kaldi recipes in most cases
     echo "stage 1: Feature Generation"
 
-    n_total=$(wc -l < $out_dir/data/train/wav.scp)
-    echo total set:$n_total
-    n_dev=$(($n_total * 2 / 100))
-    n_train=$(($n_total - $n_dev))
-    echo train set:$n_train, dev set:$n_dev
+#    n_total=$(wc -l < $out_dir/data/train/wav.scp)
+#    echo total set:$n_total
+#    n_dev=$(($n_total * 2 / 100))
+#    n_train=$(($n_total - $n_dev))
+#    echo train set:$n_train, dev set:$n_dev
     # make a dev set
-    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${dev_set}
-    utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
+#    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${dev_set}
+#    utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
 
     # Generate the fbank features; by default 80-dimensional fbanks on each frame
     fbankdir=$out_dir/fbank
     for x in train dev test; do
+        # Trim silence parts at the begining and the end of audio
+        mkdir -p $out_dir/exp/trim_silence/${x}/figs  # avoid error
+        trim_silence.sh --cmd "${train_cmd}" \
+            --nj ${nj} \
+            --fs ${fs} \
+            --win_length ${trim_win_length} \
+            --shift_length ${trim_shift_length} \
+            --threshold ${trim_threshold} \
+            --min_silence ${trim_min_silence} \
+            $out_dir/data/${x} \
+            $out_dir/exp/trim_silence/${x}
+
         make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
             --fs ${fs} \
             --fmax "${fmax}" \
@@ -159,7 +179,6 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     vaddir=$out_dir/mfcc
     for name in ${train_set} ${dev_set}; do
         utils/copy_data_dir.sh $out_dir/data/${name} $out_dir/data/${name}_mfcc_16k
-        utils/data/resample_data_dir.sh 16000 $out_dir/data/${name}_mfcc_16k
         steps/make_mfcc.sh \
             --write-utt2num-frames true \
             --mfcc-config conf/mfcc.conf \
@@ -170,8 +189,8 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
         sid/compute_vad_decision.sh --nj $nj --cmd "$train_cmd" \
             $out_dir/data/${name}_mfcc_16k \
-            $out_dir/exp/make_vad \
-            ${vaddir}
+	        $out_dir/exp/make_vad \
+	        ${vaddir}
         utils/fix_data_dir.sh $out_dir/data/${name}_mfcc_16k
     done
 
@@ -189,10 +208,9 @@ if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
 	    $out_dir/data/${name}_mfcc_16k \
             ${nnet_dir}/xvectors_${name}
     done
-    # Update json
-    for name in ${train_set} ${dev_set}; do
-        local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
-    done
+for name in ${train_set} ${dev_set}; do
+    local/update_json.sh ${dumpdir}/${name}/data.json ${nnet_dir}/xvectors_${name}/xvector.scp
+done
 fi
 
 if [ -z ${tag} ]; then
