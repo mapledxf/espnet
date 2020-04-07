@@ -126,6 +126,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     for x in train dev test; do
         # Trim silence parts at the begining and the end of audio
         mkdir -p $out_dir/exp/trim_silence/${x}/figs  # avoid error
+        echo "Trim silence for $x"
         trim_silence.sh --cmd "${train_cmd}" \
             --nj ${nj} \
             --fs ${fs} \
@@ -136,6 +137,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
             $out_dir/data/${x} \
             $out_dir/exp/trim_silence/${x}
 
+        echo "Generate fbank for $x"
         make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
             --fs ${fs} \
             --fmax "${fmax}" \
