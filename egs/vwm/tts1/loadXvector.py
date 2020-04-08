@@ -3,4 +3,6 @@
 import kaldiio
 
 x=kaldiio.load_mat("/home/zlj/dxf/espnet/egs/vwm/tts1/decode/tts/xvectors/xvector.1.ark:4")
+spemb = torch.FloatTensor(x).to(device)
 print(str(x))
+
