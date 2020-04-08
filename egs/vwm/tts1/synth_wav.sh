@@ -8,7 +8,7 @@ backend=pytorch
 stage=0        # start from 0 if you need to start from data preparation
 stop_stage=4
 ngpu=0         # number of gpus ("0" uses cpu, otherwise use gpu)
-debugmode=1
+debugmode=0
 verbose=1      # verbose option
 
 # feature configuration
@@ -25,11 +25,12 @@ trans_type="phn"
 # embedding related
 input_wav=/home/zlj/Datasets/aidatatang_200zh/corpus/dev/G0002/T0055G0002S0289.wav
 
+dict=/home/zlj/dxf/train_result/tts/data/lang_phn/train_units.txt
 # decoding related
 dict=/home/zlj/dxf/train_result/tts/data/lang_phn/train_units.txt
-synth_model=/home/zlj/dxf/results/model.loss.best
+synth_model=/home/zlj/dxf/train_result/tts/exp/train_pytorch_train_pytorch_transformer+spkemb/results/model.last1.avg.best
 decode_config=/home/zlj/dxf/espnet/egs/vwm/tts1/conf/decode.yaml
-dict=/home/zlj/dxf/espnet/egs/csmsc/tts1/decode/download/csmsc.transformer.v1/data/lang_phn/train_no_dev_units.txt
+#dict=/home/zlj/dxf/espnet/egs/csmsc/tts1/decode/download/csmsc.transformer.v1/data/lang_phn/train_no_dev_units.txt
 #synth_model=/home/zlj/dxf/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/model.last1.avg.best
 #decode_config=/home/zlj/dxf/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/decode.yaml
 
@@ -81,7 +82,15 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ] && ${use_input_wav}; then
         ${decode_dir}/data2 ${decode_dir}/log ${decode_dir}/mfcc
     utils/fix_data_dir.sh ${decode_dir}/data2
 
-    nnet_dir=/home/zlj/dxf/xvector_nnet_1a
+    nnet_dir=exp
+#    nnet_dir=/home/zlj/dxf/xvector_nnet_1a
+    if [ ! -e ${nnet_dir} ]; then
+        echo "X-vector model does not exist. Download pre-trained model."
+        wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
+        tar xvf 0008_sitw_v2_1a.tar.gz
+        mv 0008_sitw_v2_1a/exp/xvector_nnet_1a exp
+        rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
+    fi
 
     sid/nnet3/xvector/extract_xvectors.sh --cmd "$train_cmd --mem 4G" --nj 1 \
         ${nnet_dir} ${decode_dir}/data2 \
