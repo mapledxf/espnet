@@ -6,10 +6,12 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 #/home/data/xfding/train_result/tts
-out_dir=/home/zlj/dxf/train_result/tts
+out_dir=/data/xfding/train_result/tts
+data_dir=/data/xfding/data_prep/tts/combined
+
 # general configuration
 backend=pytorch
-stage=-1
+stage=0
 stop_stage=100
 ngpu=1       # number of gpus ("0" uses cpu, otherwise use gpu)
 nj=32        # numebr of parallel jobs
@@ -20,7 +22,7 @@ seed=1       # random seed number
 resume=""    # the snapshot path to resume (if set empty, no effect)
 
 # feature extraction related
-fs=16000        # sampling frequency
+fs=24000        # sampling frequency
 fmax=7600       # maximum frequency
 fmin=80         # minimum frequency
 n_mels=80       # number of mel basis
@@ -35,8 +37,7 @@ trim_shift_length=256
 trim_min_silence=0.01
 
 # config files
-train_config=conf/train_pytorch_transformer+spkemb.yaml
-#train_config=conf/tuning/train_fastspeech.v3.single.yaml
+train_config=conf/train_pytorch_transformer.yaml
 decode_config=conf/decode.yaml
 
 # decoding related
@@ -55,55 +56,24 @@ set -e
 set -u
 set -o pipefail
 
-
-openslr_aishell=/home/data/xfding/dataset/asr/aishell/data_aishell
-aishell_spk_info=/home/data/xfding/dataset/asr/aishell/resource_aishell/speaker.info
-aidatatang_200zh=/home/zlj/Datasets/aidatatang_200zh
-csmsc_data=/home/data/xfding/dataset/tts/csmsc/CSMSC
-cmlr_data=/home/data/xfding/dataset/tts/cmlr
+train_set="train"
+dev_set="dev"
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     ### Task dependent. You have to make data the following preparation part by yourself.
     ### But you can utilize Kaldi recipes in most cases
     echo "stage 0: Data preparation"
 
-    vwm_data_prepare=$out_dir/vwm_data_prepare
+    /home/xfding/vwm_data_prepare/data_prep.sh --is-tts true --fs $fs csmsc,cmlr
 
-    if [ ! -d  $vwm_data_prepare ]; then
-        git clone https://github.com/mapledxf/vwm_data_prepare.git $vwm_data_prepare
-    fi
-#    local/data_prep.sh $csmsc_data $out_dir/data/csmsc
-    # Downsample to fs from 48k
-#    utils/data/resample_data_dir.sh ${fs} $out_dir/data/csmsc
+    mkdir -p $out_dir/data/${dev_set}
+    mkdir -p $out_dir/data/${train_set}
+    cp ${data_dir}_${fs}/train/* $out_dir/data/${train_set}
+    cp ${data_dir}_${fs}/dev/* $out_dir/data/${dev_set}
 
-#    echo "stage 0: Prepare CMLR"
-#    local/cmlr_data_prep.sh \
-#	    $cmlr_data \
-#	    $out_dir/data/cmlr || exit 1;
-#    utils/data/resample_data_dir.sh ${fs} $out_dir/data/cmlr/train
-
-#    echo "stage 0: Prepare aishell"
-#    local/aishell_data_prep.sh \
-#	    $openslr_aishell \
-#            $aishell_spk_info \
-#	    $out_dir/data/aishell || exit 1;
-#    for sets in train dev test; do
-#    	utils/data/resample_data_dir.sh ${fs} $out_dir/data/aishell/$sets
-#    done
-   
-#    echo "stage 0: combine data"
-#    utils/combine_data.sh $out_dir/data/train \
-#        $out_dir/data/aidatatang_200zh/train $out_dir/data/aidatatang_200zh/dev $out_dir/data/aidatatang_200zh/test || exit 1;
-
-    $vwm_data_prepare/aidatatang_data_prep.sh --is_tts true $aidatatang_200zh $out_dir/data
-
-    utils/validate_data_dir.sh --no-feats $out_dir/data/train
-    utils/validate_data_dir.sh --no-feats $out_dir/data/test
-    utils/validate_data_dir.sh --no-feats $out_dir/data/dev
+    utils/validate_data_dir.sh --no-feats $out_dir/data/${train_set}
+    utils/validate_data_dir.sh --no-feats $out_dir/data/${dev_set}
 fi
-
-train_set="train"
-dev_set="dev"
 
 feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}
 feat_dt_dir=${dumpdir}/${dev_set}; mkdir -p ${feat_dt_dir}
@@ -112,18 +82,9 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     ### But you can utilize Kaldi recipes in most cases
     echo "stage 1: Feature Generation"
 
-#    n_total=$(wc -l < $out_dir/data/train/wav.scp)
-#    echo total set:$n_total
-#    n_dev=$(($n_total * 2 / 100))
-#    n_train=$(($n_total - $n_dev))
-#    echo train set:$n_train, dev set:$n_dev
-    # make a dev set
-#    utils/subset_data_dir.sh --last $out_dir/data/train $n_dev $out_dir/data/${dev_set}
-#    utils/subset_data_dir.sh --first $out_dir/data/train $n_train $out_dir/data/${train_set}
-
     # Generate the fbank features; by default 80-dimensional fbanks on each frame
     fbankdir=$out_dir/fbank
-    for x in train dev test; do
+    for x in train dev; do
         # Trim silence parts at the begining and the end of audio
         mkdir -p $out_dir/exp/trim_silence/${x}/figs  # avoid error
         echo "Trim silence for $x"
@@ -206,12 +167,15 @@ fi
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     echo "stage 4: x-vector extraction"
     # Check pretrained model existence
-    nnet_dir=$out_dir/exp/xvector_nnet_1a
-#    nnet_dir=/home/data/xfding/pretrained/tts/0008_sitw_v2_1a/exp/xvector_nnet_1a
+    nnet_dir=/data/xfding/pretrained_model/xvector_nnet_1a
     if [ ! -e ${nnet_dir} ]; then
         echo "X-vector model does not exist. Download pre-trained model."
-    	download_from_google_drive.sh https://drive.google.com/open?id=1j1aEgWDVDTiFftTqVK6NbqIV2aUCn02d ${out_dir}/exp/ ".tar.gz"
+        wget http://kaldi-asr.org/models/8/0008_sitw_v2_1a.tar.gz
+        tar xvf 0008_sitw_v2_1a.tar.gz
+        mv 0008_sitw_v2_1a/exp/xvector_nnet_1a $neet_dir
+        rm -rf 0008_sitw_v2_1a.tar.gz 0008_sitw_v2_1a
     fi
+
     # Extract x-vector
     for name in ${train_set} ${dev_set}; do
         sid/nnet3/xvector/extract_xvectors.sh --cmd "$train_cmd --mem 4G" --nj $nj \
@@ -255,7 +219,7 @@ if [ ${n_average} -gt 0 ]; then
 fi
 
 if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ]; then
-    echo "stage 5: Decoding"
+    echo "stage 6: Decoding"
     if [ ${n_average} -gt 0 ]; then
         average_checkpoints.py --backend ${backend} \
                                --snapshots ${expdir}/results/snapshot.ep.* \
