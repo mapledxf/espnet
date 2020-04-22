@@ -6,7 +6,9 @@
 . ./path.sh || exit 1;
 . ./cmd.sh || exit 1;
 
-out_dir=/home/data/xfding/train_result/tts
+out_dir=/data/xfding/train_result/csmsc
+data_dir=/data/xfding/data_prep/tts/csmsc_24000/all
+
 # general configuration
 backend=pytorch
 stage=-1
@@ -29,17 +31,14 @@ n_shift=300     # number of shift points
 win_length=1200 # window length
 
 # config files
-#train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
-train_config=conf/tuning/train_fastspeech.v3.single.yaml
+#train_config=conf/tuning/train_fastspeech.v3.single.yaml
+train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
 decode_config=conf/decode.yaml
 
 # decoding related
 model=model.loss.best
 n_average=1 # if > 0, the model averaged with n_average ckpts will be used instead of model.loss.best
 griffin_lim_iters=64  # the number of iterations of Griffin-Lim
-
-# root directory of db
-db_root=/home/data/xfding/dataset/tts/csmsc
 
 # exp tag
 tag="" # tag for managing experiments.
@@ -55,22 +54,8 @@ set -o pipefail
 train_set="train_no_dev"
 train_dev="dev"
 eval_set="eval"
-
-if [ ${stage} -le -1 ] && [ ${stop_stage} -ge -1 ]; then
-    echo "stage -1: Data Download"
-    local/data_download.sh ${db_root}
-fi
-
-if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
-    ### Task dependent. You have to make data the following preparation part by yourself.
-    ### But you can utilize Kaldi recipes in most cases
-    echo "stage 0: Data preparation"
-    local/data_prep.sh ${db_root}/CSMSC $out_dir/data/train
-
-    # Downsample to fs from 48k
-    utils/data/resample_data_dir.sh ${fs} $out_dir/data/train
-
-    utils/validate_data_dir.sh --no-feats $out_dir/data/train
+if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
+        /home/xfding/vwm_data_prepare/data_prep.sh --is-tts true --fs $fs csmsc
 fi
 
 feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}
@@ -91,16 +76,16 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         --n_shift ${n_shift} \
         --win_length "${win_length}" \
         --n_mels ${n_mels} \
-        $out_dir/data/train \
+        $data_dir \
         $out_dir/exp/make_fbank/train \
         ${fbankdir}
 
     # make a dev set
-    utils/subset_data_dir.sh --last $out_dir/data/train 200 $out_dir/data/deveval
+    utils/subset_data_dir.sh --last $data_dir 200 $out_dir/data/deveval
     utils/subset_data_dir.sh --first $out_dir/data/deveval 100 $out_dir/data/${train_dev}
     utils/subset_data_dir.sh --last $out_dir/data/deveval 100 $out_dir/data/${eval_set}
-    n=$(( $(wc -l < $out_dir/data/train/wav.scp) - 200 ))
-    utils/subset_data_dir.sh --first $out_dir/data/train ${n} $out_dir/data/${train_set}
+    n=$(( $(wc -l < $data_dir/wav.scp) - 200 ))
+    utils/subset_data_dir.sh --first $data_dir ${n} $out_dir/data/${train_set}
 
     # compute statistics for global mean-variance normalization
     compute-cmvn-stats scp:$out_dir/data/${train_set}/feats.scp $out_dir/data/${train_set}/cmvn.ark
@@ -205,7 +190,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
     for sets in ${train_dev} ${eval_set}; do
     (
         [ ! -e ${outdir}_denorm/${sets} ] && mkdir -p ${outdir}_denorm/${sets}
-        apply-cmvn --norm-vars=true --reverse=true $out_dir/data/${train_set}/cmvn.ark \
+        apply-cmvn --norm-vars=true --reverse=true data/${train_set}/cmvn.ark \
             scp:${outdir}/${sets}/feats.scp \
             ark,scp:${outdir}_denorm/${sets}/feats.ark,${outdir}_denorm/${sets}/feats.scp
         convert_fbank.sh --nj ${nj} --cmd "${train_cmd}" \
