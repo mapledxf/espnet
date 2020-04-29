@@ -1,0 +1,8 @@
+# ivector-mean ark:decode/tts/data2/spk2utt scp:decode/tts/xvectors/xvector.scp ark,scp:decode/tts/xvectors/spk_xvector.ark,decode/tts/xvectors/spk_xvector.scp ark,t:decode/tts/xvectors/num_utts.ark 
+# Started at Wed Apr 29 12:32:06 CST 2020
+#
+ivector-mean ark:decode/tts/data2/spk2utt scp:decode/tts/xvectors/xvector.scp ark,scp:decode/tts/xvectors/spk_xvector.ark,decode/tts/xvectors/spk_xvector.scp ark,t:decode/tts/xvectors/num_utts.ark 
+LOG (ivector-mean[5.5.603~1-4bbac]:main():ivector-mean.cc:134) Computed mean of 1 speakers (0 with no utterances), consisting of 1 utterances (0 absent from input).
+LOG (ivector-mean[5.5.603~1-4bbac]:main():ivector-mean.cc:145) Norm of mean of speakers is 62.7616, root-mean-square speaker-iVector length divided by sqrt(dim) is 2.7737
+# Accounting: time=0 threads=1
+# Ended (code 0) at Wed Apr 29 12:32:06 CST 2020, elapsed time 0 seconds

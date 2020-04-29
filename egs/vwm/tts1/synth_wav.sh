@@ -12,7 +12,7 @@ debugmode=0
 verbose=1      # verbose option
 
 # feature configuration
-fs=22050      # sampling frequency
+fs=16000      # sampling frequency
 fmax=""       # maximum frequency
 fmin=""       # minimum frequency
 n_mels=80     # number of mel basis
@@ -20,21 +20,25 @@ n_fft=1024    # number of fft points
 n_shift=256   # number of shift points
 win_length="" # window length
 
-trans_type="phn"
+trans_type="char"
 
 # embedding related
-input_wav=/data/xfding/share/ASR/aidatatang_200zh/corpus/dev/G0002/T0055G0002S0289.wav
-
+#input_wav=/data/xfding/share/ASR/aidatatang_200zh/corpus/dev/G0002/T0055G0002S0289.wav
+input_wav=/data/xfding/share/TTS/LibriTTS/dev-clean/1462/170138/1462_170138_000024_000000.wav
 # decoding related
-dict=/data/xfding/train_result/tts/data/lang_phn/train_units.txt
-synth_model=/data/xfding/train_result/tts/exp/train_pytorch_train_pytorch_transformer/results/model.avg.best
-decode_config=/home/xfding/espnet/egs/vwm/tts1/conf/decode.yaml
-#dict=/home/zlj/dxf/espnet/egs/csmsc/tts1/decode/download/csmsc.transformer.v1/data/lang_phn/train_no_dev_units.txt
-#synth_model=/home/zlj/dxf/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/model.last1.avg.best
-#decode_config=/home/zlj/dxf/train_no_dev_pytorch_train_pytorch_transformer.v1.single/results/decode.yaml
+#dict=/data/xfding/train_result/tts/data/lang_phn/train_units.txt
+#synth_model=/data/xfding/train_result/tts/exp/train_pytorch_train_pytorch_transformer/results/model.avg
+#decode_config=/home/xfding/espnet/egs/vwm/tts1/conf/decode.yaml
+#dict=/data/xfding/train_result/csmsc/data/lang_phn/train_no_dev_units.txt
+#synth_model=/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_pytorch_transformer.v1/results/model.loss.best
+#decode_config=/home/xfding/espnet/egs/csmsc/tts1/conf/decode.yaml
+dict=/data/xfding/pretrained_model/encoder/libritts/data/lang_1char/train_clean_460_units.txt
+synth_model=/data/xfding/pretrained_model/encoder/libritts/exp/train_clean_460_pytorch_train_pytorch_transformer+spkemb.v5/results/model.last1.avg.best
+decode_config=/data/xfding/pretrained_model/encoder/libritts/conf/decode.yaml
+
+checkpoint=/data/xfding/pretrained_model/vocoder/pwg/checkpoint-400000steps.pkl
 
 decode_dir=decode
-griffin_lim_iters=64
 
 . utils/parse_options.sh || exit 1;
 
@@ -69,7 +73,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ] && ${use_input_wav}; then
 
     utils/copy_data_dir.sh ${decode_dir}/data ${decode_dir}/data2
     echo "$base ${input_wav}" > ${decode_dir}/data2/wav.scp
-    utils/data/resample_data_dir.sh 16000 ${decode_dir}/data2
+    utils/data/resample_data_dir.sh ${fs} ${decode_dir}/data2
     # shellcheck disable=SC2154
     steps/make_mfcc.sh \
         --write-utt2num-frames true \
@@ -116,13 +120,11 @@ fi
 
 outdir=${decode_dir}/outputs; mkdir -p ${outdir}_denorm
 
-
 if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     echo "stage 4: Synthesis with Neural Vocoder"
     dst_dir=${decode_dir}/wav_wnv
 
     # This is hardcoded for now.
-    checkpoint=/data/xfding/pretrained_model/csmsc.parallel_wavegan.v1/checkpoint-400000steps.pkl
     parallel-wavegan-decode \
         --scp "${outdir}/feats.scp" \
         --checkpoint "${checkpoint}" \

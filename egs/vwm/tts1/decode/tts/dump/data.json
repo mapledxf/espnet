@@ -1,0 +1,28 @@
+{
+    "utts": {
+        "tts": {
+            "input": [
+                {
+                    "feat": "decode/tts/xvectors/xvector.1.ark:4",
+                    "name": "input1",
+                    "shape": [
+                        512
+                    ]
+                }
+            ],
+            "output": [
+                {
+                    "name": "target1",
+                    "shape": [
+                        11,
+                        78
+                    ],
+                    "text": "hello world",
+                    "token": "h e l l o <space> w o r l d",
+                    "tokenid": "50 47 54 54 57 13 65 57 60 54 46"
+                }
+            ],
+            "utt2spk": "X"
+        }
+    }
+}

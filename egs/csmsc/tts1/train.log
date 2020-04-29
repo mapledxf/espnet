@@ -1,0 +1,33 @@
+nohup: ignoring input
+dictionary: /data/xfding/train_result/csmsc/data/lang_phn/train_no_dev_units.txt
+stage 3: Text-to-speech model training
+stage 4: Decoding
+average over ['/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/results/snapshot.ep.700']
+2020-04-27 17:34:24,476 (splitjson:40) INFO: /home/xfding/miniconda3/bin/python3 /home/xfding/espnet/egs/csmsc/tts1/../../../utils/splitjson.py --parts 64 /data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode/dev/data.json
+2020-04-27 17:34:24,478 (splitjson:52) INFO: number of utterances = 100
+2020-04-27 17:34:24,478 (splitjson:40) INFO: /home/xfding/miniconda3/bin/python3 /home/xfding/espnet/egs/csmsc/tts1/../../../utils/splitjson.py --parts 64 /data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode/eval/data.json
+2020-04-27 17:34:24,479 (splitjson:52) INFO: number of utterances = 100
+stage 5: Synthesis
+apply-cmvn --norm-vars=true --reverse=true data/train_no_dev/cmvn.ark scp:/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode/eval/feats.scp ark,scp:/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode_denorm/eval/feats.ark,/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode_denorm/eval/feats.scp 
+ERROR (apply-cmvn[5.5.603~1-4bbac]:Input():kaldi-io.cc:756) Error opening input stream data/train_no_dev/cmvn.ark
+
+[ Stack-Trace: ]
+/home/xfding/kaldi/src/lib/libkaldi-base.so(kaldi::MessageLogger::LogMessage() const+0xb42) [0x7fd261dab692]
+apply-cmvn(kaldi::MessageLogger::LogAndThrow::operator=(kaldi::MessageLogger const&)+0x21) [0x55bf33e7ff3f]
+/home/xfding/kaldi/src/lib/libkaldi-util.so(kaldi::Input::Input(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool*)+0xbe) [0x7fd26226ea90]
+apply-cmvn(main+0xbfd) [0x55bf33e7ddf7]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7) [0x7fd261215b97]
+apply-cmvn(_start+0x2a) [0x55bf33e7d11a]
+
+kaldi::KaldiFatalErrorapply-cmvn --norm-vars=true --reverse=true data/train_no_dev/cmvn.ark scp:/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode/dev/feats.scp ark,scp:/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode_denorm/dev/feats.ark,/data/xfding/train_result/csmsc/exp/train_no_dev_pytorch_train_fastspeech.v3.single/outputs_model.last1.avg.best_decode_denorm/dev/feats.scp 
+ERROR (apply-cmvn[5.5.603~1-4bbac]:Input():kaldi-io.cc:756) Error opening input stream data/train_no_dev/cmvn.ark
+
+[ Stack-Trace: ]
+/home/xfding/kaldi/src/lib/libkaldi-base.so(kaldi::MessageLogger::LogMessage() const+0xb42) [0x7f92fdf51692]
+apply-cmvn(kaldi::MessageLogger::LogAndThrow::operator=(kaldi::MessageLogger const&)+0x21) [0x55a6c948bf3f]
+/home/xfding/kaldi/src/lib/libkaldi-util.so(kaldi::Input::Input(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool*)+0xbe) [0x7f92fe414a90]
+apply-cmvn(main+0xbfd) [0x55a6c9489df7]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7) [0x7f92fd3bbb97]
+apply-cmvn(_start+0x2a) [0x55a6c948911a]
+
+kaldi::KaldiFatalError

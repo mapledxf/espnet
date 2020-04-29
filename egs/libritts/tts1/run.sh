@@ -38,7 +38,7 @@ griffin_lim_iters=64  # the number of iterations of Griffin-Lim
 # Set this to somewhere where you want to put your data, or where
 # someone else has already put it. You'll want to change this
 # if you're not on the CLSP grid.
-datadir=/export/a15/vpanayotov/data
+datadir=/data/xfding/share/TTS
 
 # base url for downloads.
 data_url=www.openslr.org/resources/60
@@ -85,7 +85,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     echo "stage 1: Feature Generation"
 
     fbankdir=fbank
-    for x in dev_clean test_clean train_clean_100 train_clean_360; do
+    for x in dev_clean; do
         make_fbank.sh --cmd "${train_cmd}" --nj ${nj} \
             --fs ${fs} \
             --fmax "${fmax}" \
@@ -99,24 +99,18 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
             ${fbankdir}
     done
 
-    utils/combine_data.sh data/${train_set}_org data/train_clean_100 data/train_clean_360
     utils/combine_data.sh data/${dev_set}_org data/dev_clean
 
     # remove utt having more than 3000 frames
     # remove utt having more than 400 characters
-    remove_longshortdata.sh --maxframes 3000 --maxchars 400 data/${train_set}_org data/${train_set}
     remove_longshortdata.sh --maxframes 3000 --maxchars 400 data/${dev_set}_org data/${dev_set}
 
     # compute statistics for global mean-variance normalization
-    compute-cmvn-stats scp:data/${train_set}/feats.scp data/${train_set}/cmvn.ark
+    compute-cmvn-stats scp:data/${dev_set}/feats.scp data/${dev_set}/cmvn.ark
 
     # dump features for training
     dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        data/${train_set}/feats.scp data/${train_set}/cmvn.ark exp/dump_feats/train ${feat_tr_dir}
-    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        data/${dev_set}/feats.scp data/${train_set}/cmvn.ark exp/dump_feats/dev ${feat_dt_dir}
-    dump.sh --cmd "$train_cmd" --nj ${nj} --do_delta false \
-        data/${eval_set}/feats.scp data/${train_set}/cmvn.ark exp/dump_feats/eval ${feat_ev_dir}
+        data/${dev_set}/feats.scp data/${dev_set}/cmvn.ark exp/dump_feats/dev ${feat_dt_dir}
 fi
 
 dict=data/lang_1char/${train_set}_units.txt
@@ -126,17 +120,13 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     echo "stage 2: Dictionary and Json Data Preparation"
     mkdir -p data/lang_1char/
     echo "<unk> 1" > ${dict} # <unk> must be 1, 0 will be used for "blank" in CTC
-    text2token.py -s 1 -n 1 data/${train_set}/text | cut -f 2- -d" " | tr " " "\n" \
+    text2token.py -s 1 -n 1 data/${dev_set}/text | cut -f 2- -d" " | tr " " "\n" \
     | sort | uniq | grep -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${dict}
     wc -l ${dict}
 
     # make json labels
-    data2json.sh --feat ${feat_tr_dir}/feats.scp \
-         data/${train_set} ${dict} > ${feat_tr_dir}/data.json
     data2json.sh --feat ${feat_dt_dir}/feats.scp \
          data/${dev_set} ${dict} > ${feat_dt_dir}/data.json
-    data2json.sh --feat ${feat_ev_dir}/feats.scp \
-         data/${eval_set} ${dict} > ${feat_ev_dir}/data.json
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then

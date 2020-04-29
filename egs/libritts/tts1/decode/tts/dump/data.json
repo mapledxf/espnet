@@ -1,0 +1,28 @@
+{
+    "utts": {
+        "tts": {
+            "input": [
+                {
+                    "feat": "decode/tts/xvectors/xvector.1.ark:4",
+                    "name": "input1",
+                    "shape": [
+                        512
+                    ]
+                }
+            ],
+            "output": [
+                {
+                    "name": "target1",
+                    "shape": [
+                        40,
+                        78
+                    ],
+                    "text": "Input your favorite sentence in English!",
+                    "token": "I n p u t <space> y o u r <space> f a v o r i t e <space> s e n t e n c e <space> i n <space> E n g l i s h !",
+                    "tokenid": "23 56 58 63 62 13 67 57 63 60 13 48 43 64 57 60 51 62 47 13 61 47 56 62 47 56 45 47 13 51 56 13 19 56 49 54 51 61 50 2"
+                }
+            ],
+            "utt2spk": "X"
+        }
+    }
+}

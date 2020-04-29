@@ -14,7 +14,7 @@ backend=pytorch
 stage=-1
 stop_stage=100
 ngpu=1       # number of gpus ("0" uses cpu, otherwise use gpu)
-nj=32        # numebr of parallel jobs
+nj=64        # numebr of parallel jobs
 dumpdir=$out_dir/dump # directory to dump full features
 verbose=1    # verbose option (if set > 0, get more log)
 N=0          # number of minibatches to be used (mainly for debugging). "0" uses all minibatches.
@@ -31,8 +31,8 @@ n_shift=300     # number of shift points
 win_length=1200 # window length
 
 # config files
-#train_config=conf/tuning/train_fastspeech.v3.single.yaml
-train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
+train_config=conf/tuning/train_fastspeech.v3.single.yaml
+#train_config=conf/tuning/train_pytorch_transformer.v1.single.yaml
 decode_config=conf/decode.yaml
 
 # decoding related
@@ -54,8 +54,12 @@ set -o pipefail
 train_set="train_no_dev"
 train_dev="dev"
 eval_set="eval"
-if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
-        /home/xfding/vwm_data_prepare/data_prep.sh --is-tts true --fs $fs csmsc
+if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
+    echo "stage 0: Data preparation"
+    /home/xfding/vwm_data_prepare/data_prep.sh --is-tts true --fs $fs csmsc
+#    local/data_prep.sh /data/xfding/share/TTS/csmsc $data_dir
+#    utils/data/resample_data_dir.sh ${fs} $data_dir
+#    utils/validate_data_dir.sh --no-feats $data_dir
 fi
 
 feat_tr_dir=${dumpdir}/${train_set}; mkdir -p ${feat_tr_dir}

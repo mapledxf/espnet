@@ -1,0 +1,67 @@
+nohup: ignoring input
+stage 0: Data preparation
+stage 1: Feature Generation
+Trim silence for
+utils/validate_data_dir.sh: WARNING: you have only one speaker.  This probably a bad idea.
+   Search for the word 'bold' in http://kaldi-asr.org/doc/data_prep.html
+   for more information.
+utils/validate_data_dir.sh: Successfully validated data-directory /data/xfding/data_prep/tts/cmlr_24000/all
+Successfully trimed silence part.
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/make_fbank.sh --cmd run.pl --nj 64 --fs 24000 --fmax 7600 --fmin 80 --n_fft 2048 --n_shift 300 --win_length 1200 --n_mels 80 /data/xfding/data_prep/tts/cmlr_24000/all /data/xfding/train_result/cmlr/exp/make_fbank/train /data/xfding/train_result/cmlr/fbank
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/make_fbank.sh: moving /data/xfding/data_prep/tts/cmlr_24000/all/feats.scp to /data/xfding/data_prep/tts/cmlr_24000/all/.backup
+utils/validate_data_dir.sh: WARNING: you have only one speaker.  This probably a bad idea.
+   Search for the word 'bold' in http://kaldi-asr.org/doc/data_prep.html
+   for more information.
+utils/validate_data_dir.sh: Successfully validated data-directory /data/xfding/data_prep/tts/cmlr_24000/all
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/make_fbank.sh [info]: segments file exists: using that.
+Succeeded creating filterbank features for all
+utils/subset_data_dir.sh: reducing #utt from 16214 to 200
+utils/subset_data_dir.sh: reducing #utt from 200 to 100
+utils/subset_data_dir.sh: reducing #utt from 200 to 100
+utils/subset_data_dir.sh: reducing #utt from 16214 to 16014
+compute-cmvn-stats scp:/data/xfding/train_result/cmlr/data/train_no_dev/feats.scp /data/xfding/train_result/cmlr/data/train_no_dev/cmvn.ark 
+LOG (compute-cmvn-stats[5.5.603~1-4bbac]:main():compute-cmvn-stats.cc:168) Wrote global CMVN stats to /data/xfding/train_result/cmlr/data/train_no_dev/cmvn.ark
+LOG (compute-cmvn-stats[5.5.603~1-4bbac]:main():compute-cmvn-stats.cc:171) Done accumulating CMVN stats for 16014 utterances; 0 had errors.
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/dump.sh --cmd run.pl --nj 64 --do_delta false /data/xfding/train_result/cmlr/data/train_no_dev/feats.scp /data/xfding/train_result/cmlr/data/train_no_dev/cmvn.ark /data/xfding/train_result/cmlr/exp/dump_feats/train /data/xfding/train_result/cmlr/dump/train_no_dev
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/dump.sh --cmd run.pl --nj 64 --do_delta false /data/xfding/train_result/cmlr/data/dev/feats.scp /data/xfding/train_result/cmlr/data/train_no_dev/cmvn.ark /data/xfding/train_result/cmlr/exp/dump_feats/dev /data/xfding/train_result/cmlr/dump/dev
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/dump.sh --cmd run.pl --nj 64 --do_delta false /data/xfding/train_result/cmlr/data/eval/feats.scp /data/xfding/train_result/cmlr/data/train_no_dev/cmvn.ark /data/xfding/train_result/cmlr/exp/dump_feats/eval /data/xfding/train_result/cmlr/dump/eval
+dictionary: /data/xfding/train_result/cmlr/data/lang_phn/train_no_dev_units.txt
+stage 2: Dictionary and Json Data Preparation
+175 /data/xfding/train_result/cmlr/data/lang_phn/train_no_dev_units.txt
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/data2json.sh --feat /data/xfding/train_result/cmlr/dump/train_no_dev/feats.scp --trans_type phn /data/xfding/train_result/cmlr/data/train_no_dev /data/xfding/train_result/cmlr/data/lang_phn/train_no_dev_units.txt
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/feat_to_shape.sh --cmd run.pl --nj 1 --filetype  --preprocess-conf  --verbose 0 /data/xfding/train_result/cmlr/dump/train_no_dev/feats.scp /data/xfding/train_result/cmlr/data/train_no_dev/tmp-AYc3r/input_1/shape.scp
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/data2json.sh --feat /data/xfding/train_result/cmlr/dump/dev/feats.scp --trans_type phn /data/xfding/train_result/cmlr/data/dev /data/xfding/train_result/cmlr/data/lang_phn/train_no_dev_units.txt
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/feat_to_shape.sh --cmd run.pl --nj 1 --filetype  --preprocess-conf  --verbose 0 /data/xfding/train_result/cmlr/dump/dev/feats.scp /data/xfding/train_result/cmlr/data/dev/tmp-3vN4j/input_1/shape.scp
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/data2json.sh --feat /data/xfding/train_result/cmlr/dump/eval/feats.scp --trans_type phn /data/xfding/train_result/cmlr/data/eval /data/xfding/train_result/cmlr/data/lang_phn/train_no_dev_units.txt
+/home/xfding/espnet/egs/cmlr/tts1/../../../utils/feat_to_shape.sh --cmd run.pl --nj 1 --filetype  --preprocess-conf  --verbose 0 /data/xfding/train_result/cmlr/dump/eval/feats.scp /data/xfding/train_result/cmlr/data/eval/tmp-Sk2Av/input_1/shape.scp
+stage 3: Text-to-speech model training
+stage 4: Decoding
+average over ['/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/results/snapshot.ep.1000']
+2020-04-28 21:47:04,575 (splitjson:40) INFO: /home/xfding/miniconda3/bin/python3 /home/xfding/espnet/egs/cmlr/tts1/../../../utils/splitjson.py --parts 64 /data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode/dev/data.json
+2020-04-28 21:47:04,576 (splitjson:52) INFO: number of utterances = 100
+2020-04-28 21:47:05,119 (splitjson:40) INFO: /home/xfding/miniconda3/bin/python3 /home/xfding/espnet/egs/cmlr/tts1/../../../utils/splitjson.py --parts 64 /data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode/eval/data.json
+2020-04-28 21:47:05,121 (splitjson:52) INFO: number of utterances = 100
+stage 5: Synthesis
+apply-cmvn --norm-vars=true --reverse=true data/train_no_dev/cmvn.ark scp:/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode/eval/feats.scp ark,scp:/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode_denorm/eval/feats.ark,/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode_denorm/eval/feats.scp 
+ERROR (apply-cmvn[5.5.603~1-4bbac]:Input():kaldi-io.cc:756) Error opening input stream data/train_no_dev/cmvn.ark
+
+[ Stack-Trace: ]
+/home/xfding/kaldi/src/lib/libkaldi-base.so(kaldi::MessageLogger::LogMessage() const+0xb42) [0x7f521cea5692]
+apply-cmvn(kaldi::MessageLogger::LogAndThrow::operator=(kaldi::MessageLogger const&)+0x21) [0x55e58eed1f3f]
+/home/xfding/kaldi/src/lib/libkaldi-util.so(kaldi::Input::Input(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool*)+0xbe) [0x7f521d368a90]
+apply-cmvn(main+0xbfd) [0x55e58eecfdf7]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7) [0x7f521c30fb97]
+apply-cmvn(_start+0x2a) [0x55e58eecf11a]
+
+kaldi::KaldiFatalErrorapply-cmvn --norm-vars=true --reverse=true data/train_no_dev/cmvn.ark scp:/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode/dev/feats.scp ark,scp:/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode_denorm/dev/feats.ark,/data/xfding/train_result/cmlr/exp/train_no_dev_pytorch_train_pytorch_transformer.small/outputs_model.last1.avg.best_decode_denorm/dev/feats.scp 
+ERROR (apply-cmvn[5.5.603~1-4bbac]:Input():kaldi-io.cc:756) Error opening input stream data/train_no_dev/cmvn.ark
+
+[ Stack-Trace: ]
+/home/xfding/kaldi/src/lib/libkaldi-base.so(kaldi::MessageLogger::LogMessage() const+0xb42) [0x7f3056ee3692]
+apply-cmvn(kaldi::MessageLogger::LogAndThrow::operator=(kaldi::MessageLogger const&)+0x21) [0x55df7c370f3f]
+/home/xfding/kaldi/src/lib/libkaldi-util.so(kaldi::Input::Input(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, bool*)+0xbe) [0x7f30573a6a90]
+apply-cmvn(main+0xbfd) [0x55df7c36edf7]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xe7) [0x7f305634db97]
+apply-cmvn(_start+0x2a) [0x55df7c36e11a]
+
+kaldi::KaldiFatalError

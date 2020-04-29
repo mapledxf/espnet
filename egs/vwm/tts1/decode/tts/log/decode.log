@@ -1,0 +1,368 @@
+# tts_decode.py --config /data/xfding/pretrained_model/encoder/libritts/conf/decode.yaml --ngpu 0 --backend pytorch --debugmode 0 --verbose 1 --out decode/tts/outputs/feats --json decode/tts/dump/data.json --model /data/xfding/pretrained_model/encoder/libritts/exp/train_clean_460_pytorch_train_pytorch_transformer+spkemb.v5/results/model.last1.avg.best 
+# Started at Wed Apr 29 12:32:07 CST 2020
+#
+2020-04-29 12:32:07,600 (tts_decode:112) INFO: python path = :/home/xfding/kaldi/tools/sequitur-g2p/./lib/python3.7/site-packages
+2020-04-29 12:32:07,600 (tts_decode:115) INFO: backend = pytorch
+2020-04-29 12:32:08,741 (deterministic_utils:24) INFO: torch type check is disabled
+2020-04-29 12:32:08,741 (deterministic_utils:29) INFO: torch cudnn deterministic is disabled
+2020-04-29 12:32:08,741 (asr_utils:439) INFO: reading a config file from /data/xfding/pretrained_model/encoder/libritts/exp/train_clean_460_pytorch_train_pytorch_transformer+spkemb.v5/results/model.json
+2020-04-29 12:32:08,742 (tts:496) INFO: args: backend: pytorch
+2020-04-29 12:32:08,742 (tts:496) INFO: args: backward_window: 1
+2020-04-29 12:32:08,742 (tts:496) INFO: args: config: /data/xfding/pretrained_model/encoder/libritts/conf/decode.yaml
+2020-04-29 12:32:08,742 (tts:496) INFO: args: config2: None
+2020-04-29 12:32:08,742 (tts:496) INFO: args: config3: None
+2020-04-29 12:32:08,742 (tts:496) INFO: args: debugmode: 0
+2020-04-29 12:32:08,742 (tts:496) INFO: args: forward_window: 3
+2020-04-29 12:32:08,742 (tts:496) INFO: args: json: decode/tts/dump/data.json
+2020-04-29 12:32:08,742 (tts:496) INFO: args: maxlenratio: 10.0
+2020-04-29 12:32:08,742 (tts:496) INFO: args: minlenratio: 0.0
+2020-04-29 12:32:08,742 (tts:496) INFO: args: model: /data/xfding/pretrained_model/encoder/libritts/exp/train_clean_460_pytorch_train_pytorch_transformer+spkemb.v5/results/model.last1.avg.best
+2020-04-29 12:32:08,742 (tts:496) INFO: args: model_conf: None
+2020-04-29 12:32:08,742 (tts:496) INFO: args: ngpu: 0
+2020-04-29 12:32:08,742 (tts:496) INFO: args: out: decode/tts/outputs/feats
+2020-04-29 12:32:08,742 (tts:496) INFO: args: preprocess_conf: None
+2020-04-29 12:32:08,742 (tts:496) INFO: args: save_durations: False
+2020-04-29 12:32:08,742 (tts:496) INFO: args: save_focus_rates: False
+2020-04-29 12:32:08,742 (tts:496) INFO: args: seed: 1
+2020-04-29 12:32:08,742 (tts:496) INFO: args: threshold: 0.5
+2020-04-29 12:32:08,742 (tts:496) INFO: args: use_att_constraint: False
+2020-04-29 12:32:08,742 (tts:496) INFO: args: verbose: 1
+2020-04-29 12:32:08,755 (fill_missing_args:41) INFO: attribute "positionwise_layer_type" does not exist. use default linear.
+2020-04-29 12:32:08,755 (fill_missing_args:41) INFO: attribute "positionwise_conv_kernel_size" does not exist. use default 1.
+2020-04-29 12:32:08,755 (fill_missing_args:41) INFO: attribute "spk_embed_integration_type" does not exist. use default add.
+2020-04-29 12:32:08,755 (fill_missing_args:41) INFO: attribute "pretrained_model" does not exist. use default None.
+2020-04-29 12:32:08,755 (fill_missing_args:41) INFO: attribute "use_weighted_masking" does not exist. use default False.
+2020-04-29 12:32:08,949 (tts:502) INFO: Transformer(
+  (encoder): Encoder(
+    (embed): Sequential(
+      (0): Embedding(78, 384, padding_idx=0)
+      (1): ScaledPositionalEncoding(
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+    )
+    (encoders): MultiSequential(
+      (0): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (1): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (2): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (3): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (4): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (5): EncoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+    )
+  )
+  (projection): Linear(in_features=512, out_features=384, bias=True)
+  (decoder): Decoder(
+    (embed): Sequential(
+      (0): Sequential(
+        (0): Prenet(
+          (prenet): ModuleList(
+            (0): Sequential(
+              (0): Linear(in_features=80, out_features=256, bias=True)
+              (1): ReLU()
+            )
+            (1): Sequential(
+              (0): Linear(in_features=256, out_features=256, bias=True)
+              (1): ReLU()
+            )
+          )
+        )
+        (1): Linear(in_features=256, out_features=384, bias=True)
+      )
+      (1): ScaledPositionalEncoding(
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+    )
+    (decoders): MultiSequential(
+      (0): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (1): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (2): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (3): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (4): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (5): DecoderLayer(
+        (self_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (src_attn): MultiHeadedAttention(
+          (linear_q): Linear(in_features=384, out_features=384, bias=True)
+          (linear_k): Linear(in_features=384, out_features=384, bias=True)
+          (linear_v): Linear(in_features=384, out_features=384, bias=True)
+          (linear_out): Linear(in_features=384, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (feed_forward): PositionwiseFeedForward(
+          (w_1): Linear(in_features=384, out_features=1536, bias=True)
+          (w_2): Linear(in_features=1536, out_features=384, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (norm1): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm2): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (norm3): LayerNorm((384,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+    )
+  )
+  (feat_out): Linear(in_features=384, out_features=160, bias=True)
+  (prob_out): Linear(in_features=384, out_features=2, bias=True)
+  (postnet): Postnet(
+    (postnet): ModuleList(
+      (0): Sequential(
+        (0): Conv1d(80, 256, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): Tanh()
+        (3): Dropout(p=0.5, inplace=False)
+      )
+      (1): Sequential(
+        (0): Conv1d(256, 256, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): Tanh()
+        (3): Dropout(p=0.5, inplace=False)
+      )
+      (2): Sequential(
+        (0): Conv1d(256, 256, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): Tanh()
+        (3): Dropout(p=0.5, inplace=False)
+      )
+      (3): Sequential(
+        (0): Conv1d(256, 256, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (1): BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): Tanh()
+        (3): Dropout(p=0.5, inplace=False)
+      )
+      (4): Sequential(
+        (0): Conv1d(256, 80, kernel_size=(5,), stride=(1,), padding=(2,), bias=False)
+        (1): BatchNorm1d(80, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): Dropout(p=0.5, inplace=False)
+      )
+    )
+  )
+  (criterion): Tacotron2Loss(
+    (l1_criterion): L1Loss()
+    (mse_criterion): MSELoss()
+    (bce_criterion): BCEWithLogitsLoss()
+  )
+)
+2020-04-29 12:32:08,951 (tts:505) INFO: reading model parameters from /data/xfding/pretrained_model/encoder/libritts/exp/train_clean_460_pytorch_train_pytorch_transformer+spkemb.v5/results/model.last1.avg.best
+2020-04-29 12:32:09,777 (tts:623) INFO: inference speed = 117.1 frames / sec.
+2020-04-29 12:32:09,777 (tts:628) INFO: (1/1) tts (size: 12->84, focus rate: 0.909)
+# Accounting: time=7 threads=1
+# Ended (code 0) at Wed Apr 29 12:32:14 CST 2020, elapsed time 7 seconds

@@ -204,6 +204,8 @@ class FeedForwardTransformer(TTSInterface, torch.nn.Module):
         group.add_argument("--transferred-encoder-module", default="all", type=str,
                            choices=["all", "embed"],
                            help="Encoder modeules to be trasferred from teacher")
+        group.add_argument("--pretrained-model", default=None, type=str,
+                           help="Pretrained model path")
         # loss related
         group.add_argument("--use-masking", default=True, type=strtobool,
                            help="Whether to use masking in calculation of loss")
@@ -375,6 +377,9 @@ class FeedForwardTransformer(TTSInterface, torch.nn.Module):
             use_masking=args.use_masking,
             use_weighted_masking=args.use_weighted_masking
         )
+        # load pretrained model
+        if args.pretrained_model is not None:
+            self.load_pretrained_model(args.pretrained_model)
 
     def _forward(self, xs, ilens, ys=None, olens=None, spembs=None, ds=None, is_inference=False):
         # forward encoder
