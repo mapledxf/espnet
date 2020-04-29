@@ -1,1 +1,0 @@
-tts cat /data/xfding/share/TTS/LibriTTS/dev-clean/1462/170138/1462_170138_000024_000000.wav | /usr/bin/sox -t wav - -c 1 -b 16 -t wav - rate 16000 |
